@@ -194,7 +194,7 @@ WHERE
 --예제 16. JOB_ID가 ST_CLERK인 사원의 부서번호 조회(단, 부서번호가 NULL인 사원은 제외)
 --중복을 제거한 후 부서번호만 조회**
 SELECT
-    department_id
+    DISTINCT department_id
 FROM
     employees
 WHERE
@@ -207,6 +207,7 @@ WHERE
 SELECT
     employee_id,
     first_name,
+    JOB_ID,
     commission_pct * salary AS commission
 FROM
     employees

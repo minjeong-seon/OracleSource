@@ -608,4 +608,4 @@ SELECT EMPNO || ' : ' || ENAME  FROM EMP;
 
 
 -- 7) TRIM, LTRIM, RTRIM : 공백 포함 특정 문자 제거
-SELECT '     이것이 ORACLE이다.', TRIM('     이것이 ORACLE이다.') FROM DUAL;
+SELECT '     이것이 ORACLE이다.   ', TRIM('     이것이 ORACLE이다.   ') FROM DUAL;
