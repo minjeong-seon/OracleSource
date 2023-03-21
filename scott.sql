@@ -857,7 +857,12 @@ SELECT
     empno,
     ename,
     mgr,
-    decode(to_char(mgr), 1, 2,NULL, '0000','75', '5555', '76', '6666', '77', '7777', '78', '8888', substr(to_char(mgr), 1) AS chg_mgr
+    decode(substr(to_char(mgr),1,2), NULL, '0000',
+    '75', '5555', 
+    '76', '6666', 
+    '77', '7777', 
+    '78', '8888', 
+    substr(to_char(mgr), 1)) AS chg_mgr
 FROM
     emp;
 
