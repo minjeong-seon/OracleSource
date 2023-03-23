@@ -1524,14 +1524,240 @@ ORDER BY EMPNO DESC;
 SELECT EMPNO, ENAME, S.GRADE
 FROM EMP, SALGRADE S
 WHERE EMP.SAL BETWEEN S.LOSAL AND S.HISAL
-AND SAL > ANY (SELECT MAX(SAL) FROM EMP WHERE JOB='SALESMAN')
+AND SAL > ALL (SELECT SAL FROM EMP WHERE JOB='SALESMAN')
 ORDER BY EMPNO DESC;
+
+--다중행+스칼라 서브쿼리 사용 시
+SELECT EMPNO, ENAME, (SELECT GRADE FROM SALGRADE WHERE SAL BETWEEN LOSAL AND HISAL) AS GRADE
+FROM EMP
+WHERE SAL > ALL (SELECT SAL FROM EMP WHERE JOB='SALESMAN')
+ORDER BY EMPNO DESC;
+
 
 
 ----------------------------------------(2023.03.23)-------------------------------------------------
 
+-- DML (Data Manipulation Language): 데이터를 추가, 수정, 삭제하는 데이터 조작어
+-- select + DML ==> 자주 사용하는 sql
+
+-- 연습용 테이블 생성
+CREATE TABLE DEPT_TEMP AS SELECT * FROM DEPT;
 
 
+-- 열이름은 선택사항이다.
+-- insert into 테이블이름(열이름1. 열이름2, ...etc)
+-- values(데이터1, 데이터2,...etc)
+
+-- DEPT_TEMP 테이블에 새로운 부서 추가하기
+INSERT INTO DEPT_TEMP(DEPTNO, DNAME, LOC)
+VALUES(50, 'DATABASE', 'SEOUL');
+
+-- 열 이름 사용하지 않는 경우
+INSERT INTO DEPT_TEMP
+VALUES(60, 'NETWORK', 'BUSAN');
+
+-- insert 시 발생할 수 있는 오류
+
+-- 1) ORA-01438: 이 열에 대해 지정된 전체 자릿수보다 큰 값이 허용됩니다.
+INSERT INTO DEPT_TEMP
+VALUES(600, 'NETWORK', 'BUSAN'); -->deptno 열은 NUMBER(2,0)로 숫자 2자리만 가능한데 600으로 초과됨
+
+
+-- 2) ORA-01722: 수치가 부적합합니다
+INSERT INTO DEPT_TEMP
+VALUES('NO', 'NETWORK', 'BUSAN'); -->숫자 영역에 문자를 추가하여 오류 발생('숫자' 는 자동형변환으로 허용 가능)
+
+
+-- 3) ORA-00947: 값의 수가 충분하지 않습니다. ("not enough values")
+INSERT INTO DEPT_TEMP(DEPTNO, DNAME, LOC)
+VALUES(50, 'DATABASE'); -->열의 수와 데이터 수가 맞지 않음
+
+
+-- 4) NULL 값을 삽입하는 방법
+-- (1)NULL을 직접 입력
+INSERT INTO DEPT_TEMP(DEPTNO, DNAME, LOC)
+VALUES(50, 'WEB', NULL);
+
+-- (2)빈문자열을 입력
+INSERT INTO DEPT_TEMP(DEPTNO, DNAME, LOC)
+VALUES(90, 'MOBILE', '');
+
+-- (3)NULL을 삽입할 칼럼명을 지정하지 않음(필드(열)명은 필수)
+INSERT INTO DEPT_TEMP(DEPTNO, LOC)
+VALUES(90, 'INCHEON');
+
+SELECT * FROM DEPT_TEMP;
+
+-- 테이블 복사(데이터 제외)
+-- emp_temp 생성(emp 테이블 복사 - 단, 데이터는 복사를 하지 않을 때)
+create table emp_temp as select * from emp where 1<>1;
+
+insert into emp_temp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+values(9999, '강백호', 'PRESIDENT', NULL, '2001/01/01', 5000, 1000, 10);
+
+insert into emp_temp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+values(1111, '김도일', 'MANAGER', 9999, '2001/01/05', 4000, NULL, 20);
+
+--[날짜오류]ORA-01830: 날짜 형식의 지정에 불필요한 데이터가 포함되어 있습니다
+insert into emp_temp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+values(2222, '도레미', 'MANAGER', 9999, '07/01/2001', 4000, NULL, 20);
+
+--solution) 데이터를 인식할 수 있도록 코드 입력
+insert into emp_temp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+values(2222, '도레미', 'MANAGER', 9999, TO_DATE('07/01/2001', 'DD/MM/YYYY'), 4000, NULL, 20);
+
+
+insert into emp_temp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+values(3333, '루피', 'MANAGER', 3333, SYSDATE, 3000, NULL, 30);
+
+
+
+-- 서브쿼리로 INSERT 구현
+-- emp, salgrade 테이블을 조인 후 급여등급이 1인 사원만 emp_temp에 추가
+insert into emp_temp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+select empno, ename, job, mgr, hiredate, sal, comm, deptno 
+from emp join salgrade on sal between losal and hisal where grade=1;
+
+SELECT * FROM EMP_TEMP;
+
+COMMIT;     --현재까지 실행한 작업 저장
+
+
+-- UPDATE : 테이블에 있는 데이터 수정
+--update 테이블명
+--set 변경할 열 이름 = 데이터, 변경할 열 이름 = 데이터, ....etc
+--where 변경을 위한 대상 행을 선별하기 위한 조건
+
+--dept_temp 테이블 loc 열의 모든 값을 seoul로 변경
+update dept_temp
+set loc='SEOUL';
+
+rollback;   --commit 전에는 실행한 내용을 되돌릴 수 있음
+
+--dept_temp 테이블 부서번호가 40번인 loc열의 데이터를 seoul로 변경
+update dept_temp
+set loc='SEOUL'
+where deptno = 40;
+
+
+update emp_temp
+set comm = 50
+where sal<=2500;
+
+
+
+-- 서브쿼리를 사용하여 데이터 수정 가능
+-- DEPT 테이블: 40번 부서의 DNAME, LOC를 > DEPT_TEMP 테이블: 40번 부서의 DNAME, LOC로 업데이트
+
+update dept_temp
+set (dname, loc) = (select dname, loc from dept where deptno=40)
+where deptno=40;
+
+commit;
+
+
+
+-- delete : 테이블에 있는 데이터 삭제
+-- delete  from(선택) 테이블명
+-- where 삭제 데이터를 선별하기 위한 조건식
+
+create table emp_temp2 as select * from emp; 
+
+delete from emp_temp2 where job='MANAGER';
+delete emp_temp2 where job='SALESMAN';
+
+--전체 데이터 삭제
+DELETE EMP_TEMP2;
+
+ROLLBACK; 
+
+-- 서브쿼리를 사용하여 삭제
+-- 급여등급이 3, 30번 부서인 사원 삭제
+DELETE FROM emp_temp2
+WHERE empno in (SELECT e.empno from emp_temp2 e, salgrade s where e.sal between s.losal and s.hisal 
+and s.grade=3 and deptno=30);
+
+commit;
+
+SELECT * FROM dept_temp;
+SELECT * FROM EMP_TEMP;
+SELECT * FROM EMP_TEMP2;
+
+-----------
+--[실습1] 실습을 위하여 기존 테이블을 이용하여 테이블을 생성한다.
+--① EMP 테이블의 내용을 이용하여 EXAM_EMP 생성
+--② DEPT 테이블의 내용을 이용하여 EXAM_DEPT 생성
+--③ SALGRADE 테이블의 내용을 이용하여 EXAM_SALGRADE 생성
+
+create table EXAM_EMP as select *from emp;
+create table EXAM_DEPT as select *from dept;
+create table EXAM_SALGRADE as select *from salgrade;
+
+
+--[실습2] 다음의 정보를 EXAM_EMP 테이블에 입력하시오.
+DELETE FROM EXAM_EMP;
+
+insert into EXAM_EMP(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+values (7208, 'TEST_USER8', 'STUDENT', 7201, '2016/03/09', 1200, NULL, 80);
+
+
+--[실습3] EXAM_EMP에 속한 사원 중 50번 부서에서 근무하는 사원들의 평균 급여보다 
+--많은 급여를 받고 있는 사원들을 70번 부서로 옮기는 SQL 문 작성하기
+update exam_emp
+set deptno=80
+where sal > (select avg(sal) from exam_emp where deptno=50);
+
+
+--[실습4] EXAM_EMP에 속한 사원 중 60번 부서의 사원 중에서 입사일이 가장 빠른 사원보다 
+--늦게 입사한 사원의 급여를 10% 인상하고 80번 부서로 옮기는 SQL 문 작성하기
+update exam_emp
+set deptno=80, sal=sal*1.10
+where hiredate >(select min(hiredate) from exam_emp where deptno=60);
+
+
+--[실습5] EXAM_EMP에 속한 사원 중, 급여 등급이 5인 사원을 삭제하는 SQL문을 작성하기
+delete from exam_emp
+where empno in (select empno from exam_emp , salgrade  where sal between losal and hisal and grade=5);
+
+SELECT * FROM exam_emp;
+
+commit;
+
+
+
+-- 트랜잭션(transaction) : 최소 수행 단위
+-- TCL (Transaction Control Language) : 트랜잭션 제어하는 구문 
+
+create table dept_tcl as select * from dept;
+
+insert into dept_tcl values(50, 'DATABASE', 'SEOUL');
+
+update dept_tcl set loc='BUSAN' where deptno=40;
+
+delete from dept_tcl where dname='RESEARCH';
+
+select * from dept_tcl;
+
+
+-- 트랜잭션 취소
+rollback;
+
+-- 트랜잭션 최종 반영
+commit;
+
+
+-- 세션 : 어떤 활동을 위한 시간이나 기간
+-- 데이터베이스 세션 : 데이터베이스 접속 시작 ~ 관련작업 수행 ~ 접속 종료
+-- LOCK : 잠금 (수정 중인 데이터는 접근 차단)
+delete from dept_tcl where deptno=50;
+update dept_tcl set loc='SEOUL' where deptno=30;
+
+select * from dept_temp;
+
+
+
+
+----------------------------------------(2023.03.24)-------------------------------------------------
 
 
 
