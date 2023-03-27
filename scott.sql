@@ -1757,17 +1757,421 @@ select * from dept_temp;
 
 
 
-----------------------------------------(2023.03.24)-------------------------------------------------
+
+
+
+
+----------------------------------------(2023.03.27)-------------------------------------------------
+-- DDL : 데이터 정의어(데이터베이스 객체 생성/수정/삭제)
+-- 데이터베이스 객체
+-- 종류 : 테이블, 인덱스, 뷰, 데이터 사전, 시퀀스, 시노님, 프로시저, 함수, 패키지, 트리거, ...
+-- 생성 : create | 수정 : alter | 삭제 : drop
+
+-- 1. 테이블 생성
+--CREATE TABLE 테이블명(
+--    열이름 1 자료형,
+--    열이름 3 자료형,
+--    열이름 3 자료형,
+--    열이름 4 자료형
+--  );
+
+-- 테이블 생성 규칙 / 열 이름 지정 규칙
+-- 1) 테이블 이름은 문자로 시작
+-- 2) 테이블 이름은 30BYTE 이하
+-- 3) 같은 사용자 소유의 테이블 이름은 중복될 수 없음
+-- 4) 테이블 이름에 사용할 수 있는 특수문자 : $, #, _
+-- 5) SQL 키워드는 테이블 이름에 사용할 수 없음     ex) SELECT, FROM, WHERE, ...
+
+-- 자료형
+-- [문자형 데이터]
+-- VARCHAR2(길이) : 가변 길이 문자열 데이터 저장 (길이는 최대 4000 BYTE) -지정 길이 이하의 메모리 크기는 상관없이 입력 가능
+-- CAHR(길이) : 고정 길이 문자열 데이터 저장
+-- NVARCHAR2(길이) : 가변 길이(UNICODE) 데이터 저장
+--      ex) name varchar2(10) : 영어는 10자, 한글은 3자까지 가능
+--      ex) name nvarchar2(10) : 영어/한글 모두 10자까지 가능
+-- NCHAR(길이) : 고정 길이(UNICODE)
+--      ex) name char2(10) : 영어는 10자, 한글은 3자까지 가능 + 메모리 10 BYTE 고정
+--      ex) name nchar2(10) : 영어/한글 모두 10자까지 가능 + 메모리 10 BYTE 고정
+
+-- [숫자형 데이터]
+-- NUMBER(전체자릿수, 소숫점자릿수)
+
+-- [날짜형 데이터]
+-- DATE : 날짜, 시간 저장
+-- TIMESTAMP
+
+-- [기타]
+-- BLOB : 대용량 이진 데이터 저장(이미지, 동영상, MP3 등의 데이터를 DB에 저장 가능)
+-- CLOB : 대용량 텍스트 데이터 저장
+-- JSON : JSON 데이터 저장
+
+create table emp_ddl( 
+empno number(4),
+ename varchar2(10),
+job varchar(10),
+hiredate date,
+sal number(7,2),
+comm number(7,2),
+deptno number(2));
+
+desc emp_ddl;
+
+-- 2. 테이블 수정 : alter
+-- 1) 열 추가 : add
+alter table emp_temp2 add HP varchar2(20);
+
+-- 2) 열 이름 변경 : rename
+alter table emp_temp2 rename column HP to tel;
+
+-- 3) 열 자료형 변경 : modify -단, 데이터 길이가 아닌 유형을 변경할 때는 열이 비어있어야 한다.
+alter table emp_temp2 modify empno number(5);
+
+-- 4) 특정 열 삭제 : drop
+alter table emp_temp2 drop column tel;
+
+-- 5) 테이블 명 변경
+rename emp_temp2 to emp_rename;
+
+
+-- 3. 테이블 삭제 : dml은 롤백이 되지만, ddl은 롤백 불가
+drop table emp_rename;
+
+
+-- ① 테이블 데이터 전체 삭제(dml) -되돌리기 가능
+delete from emp_rename;
+select*from emp_rename;
+
+rollback; 
+
+-- ② 테이블 데이터 전체 삭제(ddl) -되돌리기 불가
+truncate table emp_rename;
+
+
+
+--[실습] member 테이블 생성
+create table member(
+id char(8), name varchar2(10), addr varchar(50), nation char(4), email varchar2(50), age number(7,2));
+
+desc member;
+
+--[실습2]member 테이블 변경
+alter table member add BIGO varchar2(20);
+alter table member modify BIGO varchar2(30);
+alter table member rename column remarkl to REMARK; 
+    
+--[error] ORA-12899: "SCOTT"."MEMBER"."NATION" 열에 대한 값이 너무 큼(실제: 12, 최대값: 4)
+insert into member values('hong123', '홍길동', '서울시 은평구 불광동', '대한민국', 'hong123@naver.com', 25, null);
+
+drop table member;
+
+create table member(
+id char(8), name varchar2(10), addr varchar(50), nation nchar(4), email varchar2(50), age number(7,2) not null);
+alter table member add remark varchar2(30);
+
+
+
+-- 데이터베이스 객체
+-- 종류 : 테이블, 인덱스, 뷰, 데이터 사전, 시퀀스, 시노님, 프로시저, 함수, 패키지, 트리거, ...
+-- 생성 : create | 수정 : alter | 삭제 : drop
+
+-- ⓐ 인덱스 : 더 빠른 검색을 도움
+--  1>사용자가 직접 특정 테이블 열에 지정 가능
+--  2>기본키(혹은 unique key)를 생성하면 인덱스로 지정
+
+--(직접 지정))create index 인덱스 이름 on 테이블명 (인덱스로 사용할 열이름);
+create index idx_emp_sal on emp(sal);  --emp테이블의 sal 열을 인덱스로 지정
+
+-- select : 검색방식
+-- full scan
+-- index scan
+
+select * from emp whrere emp=7900;
+
+-- 인덱스 삭제
+drop index idx_emp_sal;
+
+
+-- ⓑ View : 가상 테이블
+--  > 편리성 : select 문이 복잡한 경우 완화하기 위해 사용
+--  > 보안성 : 테이블의 특정 열을 노출하고 싶지 않을 때 사용
+-- create[or replace] [force | noforce] view 뷰이름(열이름1, 열이름2,...) --> []는 옵션사항
+-- as (저장할 select 구문)
+-- [with check option]
+-- [with read option];
+
+create view vm_emp20 as (select empno, ename, job, deptno from emp where empno=20);
+
+--▲
+-- 서브쿼리를 사용
+select*from (select empno, ename, job, deptno from emp where empno=20);
+
+-- 뷰 사용
+select * from vm_emp20;
+
+-- 뷰 삭제
+drop view vm_emp20;
+
+-- [옵셥] read only
+create view vm_emp_read as select empno, ename, job from emp with read only;
+
+-- view 에 insert 작업 수행
+insert into vm_emp20 values (8888, 'kim', 'sales', 20);
+select * from emp; --원본 삽입여부 확인
+
+--SQL 오류: ORA-42399: 읽기 전용 뷰에서는 DML 작업을 수행할 수 없습니다.
+insert into vm_emp_read values (9999, 'kim', 'sales');
+
+
+-- 인라인 뷰 : 일회성으로 만들어서 사용하는 뷰
+-- rownum : 조회된 순서대로 일련번호 매김
+select rownum, e.* from emp e;
+
+select rownum, e.* from ( select * from emp e order by sal desc) e;
+
+-- 급여 상위 세 사람 조회
+select rownum, e.* from ( select * from emp e order by sal desc) e where rownum<=3;
+
+
+-- ⓒ 시퀀스 : 규칙에 따라 순번 생성
+-- create sequence 시퀀스 이름; (설정 하지 않은 건 기본값으로 세팅됨)
+
+--create sequence 시퀀스명 
+--[increment by 숫자]                    기본값 1
+--[start with 숫자]                       기본값 1
+--[maxvalue 숫자 | nomaxvalue] 
+--[minvalue 숫자 | nominvalue]
+--[cycle | nocycle]       cycle인 경우 maxvalue 에 값이 다다르면 시작값부터 다시 시작
+--[cache 숫자 | nocache]    시퀀스가 생성할 번호를 미리 메모리에 할당해 놓음 (기본 cache 20)
+
+--데이터 제외 행열만 복사
+create table dept_sequence as select * from dept where 1<>1;
+
+create sequence seq_dept_sequence
+increment by 10 --10씩 증가
+start with 10 --10에서부터
+maxvalue 90 --최대 90까지
+minvalue 0 --최소 0
+nocycle --순환하지 않는(max값에 도달하면 멈춤)
+cache 2; --시퀀스2개씩 메모리 잡기
+
+-- 시퀀스 사용 : 시퀀스 이름.currval(=마지막으로 생성된 시퀀스 조회) | 시퀀스이름.nextval(시퀀스 생성)
+
+--부서번호 입력시 시퀀스 사용
+insert into dept_sequence(deptno, dname, loc) 
+values (seq_dept_sequence.nextval, 'DATABASE', 'SEOUL');
+
+SELECT * FROM dept_sequence;
+
+-- 시퀀스 seq_dept_sequence.nextval exceeds MAXVALUE : nocycle 옵셥으로 생성했기 때문에 번호가 순환되지 않음.
+
+drop sequence seq_dept_sequence;
+
+create sequence 
+increment by 3
+start with 10
+maxvalue 99
+minvalue 0
+cycle
+cache 2;
+
+select seq_dept_sequence.currval from dual;
+
+
+-- synonym(동의어) : 테이블 뷰 시퀀스 등 객체 이름 대신 사용할 수 있는 다른 이름을 부여하는 객체
+
+-- emp테이블의 별칭을 e로 지정
+create synonym e for emp;
+
+-- public : 동의어를 데이터베이스 내 모든 사용자가 사용할 수 있도록 설정
+--- create [public] synonym e for emp;
+
+select * from e;
+drop synonym e;
+
+
+--[실습]
+create table empidx as select * from emp;
+create index idx_empidx_empno on empidx(empno); 
+
+--[실습]
+create view empidx_over15k as (select empno, ename, job, deptno, sal, comm from empidx where sal>1500);
+
+select * from empidx_over15k;
+
+--[실습]
+create table deptseq as select * from dept;
+
+create sequence seq_deptseq
+start with 1
+maxvalue 99
+minvalue 1
+nocycle
+nocache;
+
+select seq_deptseq.currval from dual;
+
+-- 데이터 사전 뷰를 통해 시퀀스 확인
+select * from user_sequences;
+
+
+-- 제약조건 : 테이블의 특정 열에 지정
+--  테이블 생성 시 제약조건 지정, or 생성 후에 alter를 통해 추가/변경 가능
+--  제약조건 예) null 허용 / 불허용, 유일한 값, 특정 조건식을 만족하는 데이터만 입력가능,...
+--  데이터 무결성 유지(데이터 정확성, 일관성 보장) => dml 작업시 반드시 지켜야 함
+--      >영역 무결성
+--      >개체 무결성
+--      >참조 무결성
+
+-- 1) not null : 빈 값 허용 불가 (무조건 값이 입력되어야 함 > 안되면 오류 발생)
+create table table_notnull(
+long_id varchar2(20) not null,
+long_pwd varchar2(20) not null,
+tel varchar2(20)
+);
+
+insert into table_notnull(long_id, long_pwd) values('hong123', 'hong123');
+
+select * from table_notnull;
+
+--현재 사용자가 가진 전체 제약조건 조회
+select * from user_constraints;
+
+-- 제약조건 + 제약조건 이름 지정
+create table table_notnull2(
+login_id varchar2(20) constraint TBNN2_LOGIN_NN not null,
+login_pwd varchar2(20) constraint TBMM2_LGPWD_NN not null,
+tel varchar2(20)
+);
+
+select * from user_constraints;
+
+-- 이미 생성한 테이블에 제약조건 추가
+-- 02296. 00000 - "cannot enable (%s.%s) - null values found" / (SCOTT.) 사용으로 설정 불가 - 널 값이 발견되었습니다.
+alter table table_notnull modify(tel not null);
+
+-- 이미 삽입된 대상도 체크 대상이 되므로 제약조건 지정은 테이블 생성 시 설정하는 게 편함.
+--업데이트로 기입력된 값 지우고 다시 제약조건 걸어야 함...
+update table_notnull set tel='010-1234-5678' where long_id = 'hong123';
+
+
+-- 제약조건 명 변경
+alter table table_notnull2 rename constraint TBNN2_LOGIN_NN to ID_NOT_NULL;
+
+-- 제약조건 명 삭제
+alter table table_notnull2 drop constraint ID_NOT_NULL;
+
+
+-- 2) unique : 중복되지 않는 값
+--      ex) 아이디, 전화번호, 
+create table tb_unique(
+logid varchar2(20) unique not null,
+logpwd varchar2(20) not null,
+tel varchar2(20)
+);
+
+
+--ORA-00001: 무결성 제약 조건(SCOTT.SYS_C008367)에 위배됩니다.
+insert into tb_unique(logid, logpwd, tel) values('hong123', 'hong123', '010-1234-5678');
+--ORA-01400: NULL을 ("SCOTT"."TB_UNIQUE"."LOGID") 안에 삽입할 수 없습니다
+insert into tb_unique(logid, logpwd, tel) values(null, 'hong123', '010-1234-5678');
+
+
+select * from tb_unique;
+
+-- 테이블 생성 제약조건 지정, 변경, 삭제 not null 형태와 동일함
+
+
+
+-- 3) primary key(pk) (인덱스 자동 생성): unique + not null
+create table tb_primary(
+logid varchar2(20) primary key,
+logpwd varchar2(20) not null,
+tel varchar2(20)
+);
+
+
+-- 4) 외래키(foreign key; fk) : 다른 테이블 간 관계를 정의하는데 사용(부모테이블-자식테이블 개념)
+--      >특정 테이블에서 pirmary key 제약조건을 지정한 열을 다른 테이블의 특정 열에서 참조
+
+-- 사원 추가 시 부서번호를 입력해야 함 => dept 테이블의 deptno만 삽입
+-- 부모 테이블
+create table dept_fk(
+deptno number(2) constraint deptfk_pk primary key,
+dname varchar2(14),
+loc varchar(13));
+
+-- references 참조할 테이블 명(참조할 열) : FK 지정
+-- 자식 테이블
+create table emp_fk(
+empno number(4) constraint empfk_empno_pk primary key,
+ename varchar2(10),
+job varchar2(9),
+deptno number(2) constraint empfk_deptno_fk references dept_fk(deptno)
+);
+
+-- ORA-02291: 무결성 제약조건(SCOTT.EMPFK_DEPTNO_FK)이 위배되었습니다- 부모 키가 없습니다
+insert into emp_fk values(1000, 'TEST', 'SALES', 10);
+
+-- 외래키 제약 조건**
+-- 부모 테이블 데이터 먼저 > 자식 테이블 데이터 나중에 입력
+-- 삭제 시에는 자식 먼저 > 부모 나중에 삭제
+
+insert into DEPT_FK values(10, 'DATABASE', 'SEOUL');
+
+SELECT * FROM EMP_FK;
+
+--ORA-02292: 무결성 제약조건(SCOTT.EMPFK_DEPTNO_FK)이 위배되었습니다- 자식 레코드가 발견되었습니다.
+-- DELETE FROM DEPT_FK WHERE DEPTNO=10;
+
+-- 외래키 제약조건 옵션
+-- ON DELETE CASCADE : 부모가 삭제되면 부모를 참조하는 자식 레코드도 같이 삭제
+-- ON DELETE SET NULL : 부모가 삭제되면 부몰르 참조하는 자식 레코드를 NULL로 변경
+
+create table dept_fk2(
+deptno number(2) constraint deptfk_pk2 primary key,
+dname varchar2(14),
+loc varchar(13));
+
+create table emp_fk2(
+empno number(4) constraint empfk_empno_pk2 primary key,
+ename varchar2(10),
+job varchar2(9),
+deptno number(2) constraint empfk_deptno_fk2 references dept_fk2(deptno) ON DELETE CASCADE);
+
+insert into DEPT_FK2 values(10, 'DATABASE', 'SEOUL');
+insert into emp_fk2 values(1000, 'TEST', 'SALES', 10);
+
+DELETE FROM DEPT_FK2 WHERE DEPTNO=10;
+
+
+-- 5) CHECK : 열에 저장할 수 있는 값의 범위 또는 패턴 지정
+-- EX) 비밀번호는 3자리보다 커야 한다.
+create table TB_CHECK(
+logid varchar2(20) primary key,
+logpwd varchar2(20) CHECK (LENGTH(LOGPWD) > 3),  --LOGPWD 의 데이터 최소 길이를 3으로 지정
+tel varchar2(20)
+);
+
+--ORA-02290: 체크 제약조건(SCOTT.SYS_C008381)이 위배되었습니다.
+INSERT INTO TB_CHECK VALUES('TEST', '123', '010-2666-8891');
+
+INSERT INTO TB_CHECK VALUES('TEST', '1234', '010-2666-8891');
+
+
+-- 6) DEFAULT : 기본값 지정(값이 입력되지 않으면 지정된 기본값으로 입력)
+create table TB_DEFAULT(
+logid varchar2(20) primary key,
+logpwd varchar2(20) DEFAULT '1234',  -->값이 입력되지 않으면 1234 입력
+tel varchar2(20)
+);
+
+INSERT INTO TB_DEFAULT VALUES('TEST', NULL, '010-2666-8891');  -->NULL이 입력됨
+INSERT INTO TB_DEFAULT(LOGID, TEL) VALUES('TEST1', '010-2666-8891');  -->기본값이 입력됨
+
+SELECT * FROM TB_DEFAULT;
 
 
 
 
 
-
-
-
-
-
-
-
-
+----------------------------------------(2023.03.28)-------------------------------------------------
