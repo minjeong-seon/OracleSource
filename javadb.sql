@@ -58,16 +58,32 @@ create sequence product_seq;
 
 --order
 -- order 테이블 생성 : order_id(숫자 8자리, pk), user_id(user 테이블 참조), product_id(priduct 테이블 참조,fk)
+--구매날짜 칼럼 추가
 -- order_seq 생성
 create table sorder(
 order_id number(8) constraint orderid_pk primary key,
 user_id number(4) not null constraint useridfk_pk references suser(user_id),
-product_id number(8) not null constraint pidfk_pk references product(product_id));
+product_id number(8) not null constraint pidfk_pk references product(product_id)
+);
+
+alter table sorder add orderdate date;
 
 create sequence order_seq;
 
+-- user_id, name, pay_no, info 조회
+select u.user_id, u.name, p.pay_no, p.info
+from suser u join paytype p on u.pay_no = p.pay_no where user_id = 1000;
+
+-- 주문목록 조회
+-- user_id, name, card/cash, product_id, pname, price, content
+select u.user_id, u.name, p.info, i.product_id, i.pname, i.content
+from suser u, paytype p, sorder o, product i 
+where u.pay_no = p.pay_no 
+and u.user_id = o.user_id
+and o.product_id = i.product_id;
 
 
-select * from suser;
+
+select * from sorder;
 
 
