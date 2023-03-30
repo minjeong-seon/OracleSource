@@ -76,14 +76,13 @@ from suser u join paytype p on u.pay_no = p.pay_no where user_id = 1000;
 
 -- 주문목록 조회
 -- user_id, name, card/cash, product_id, pname, price, content
-select u.user_id, u.name, p.info, i.product_id, i.pname, i.content
+select u.user_id, u.name, p.info, i.product_id, i.pname, price, i.content, o.orderdate
 from suser u, paytype p, sorder o, product i 
-where u.pay_no = p.pay_no 
-and u.user_id = o.user_id
-and o.product_id = i.product_id;
-
+where u.pay_no = p.pay_no and u.user_id = o.user_id and o.product_id = i.product_id;
 
 
 select * from sorder;
 
+commit;
 
+ 
